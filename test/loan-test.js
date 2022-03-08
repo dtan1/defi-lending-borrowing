@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers, waffle } = require("hardhat");
 const BigNumber = require('bignumber.js');
-const { loadFixture } = require("ethereum-waffle");
+//const { loadFixture } = require("ethereum-waffle");
 //const LoanRequest = artifacts.require("LoanRequest");
 
 
@@ -17,7 +17,7 @@ describe("Loan", function () {
   let dappToken;
   let provider;
 
-    // uncomment below to turn console.log back on
+    // comment below to turn console.log back on
   //console.log = function(){}; // turn off console.log
 
 
@@ -87,6 +87,13 @@ describe("Loan", function () {
     
   });
 
+  after ( async function () {
+    console.log(' ');
+    console.log('------------ end of loan test  --------------');
+    console.log(' ');
+    
+  });
+
   describe("Loan testing", function () {
     console.log("----------------------");
     it("should initialize parties struct correctly ", async function () {
@@ -128,17 +135,18 @@ describe("Loan", function () {
       });
 
     it("should pay loan correctly ", async function () {
-      console.log("----------------------");
-      
+      console.log("----------------------");  
       console.log("user token balance  is " + await dappToken.balanceOf(user.address));
+      console.log("loan token balance  is " + await dappToken.balanceOf(loan.address));
+  
  
       let ownerBalance = await provider.getBalance(owner.address);
       console.log("owner ether balance is " + 
-                   ethers.utils.formatEther(ownerBalance));
+                    ethers.utils.formatEther(ownerBalance));
 
-    let userBalance = await provider.getBalance(user.address);
-    console.log("user ether balance is " + 
-                ethers.utils.formatEther(userBalance));
+      let userBalance = await provider.getBalance(user.address);
+      console.log("user ether balance is " + 
+                     ethers.utils.formatEther(userBalance));
 
         // await loan.connect(user).payLoan( {value : LOAN_AMOUNT});
       payoffAmount = await ethers.utils.parseEther(LOAN_AMOUNT.toString());
@@ -160,13 +168,25 @@ describe("Loan", function () {
 
       userBalance = await provider.getBalance(user.address);
       console.log("after payoff, user ether balance is " + 
-      ethers.utils.formatEther(userBalance));
+                     ethers.utils.formatEther(userBalance));
 
       ownerBalance = await provider.getBalance(owner.address);
       console.log("after payoff, owner ether balance is " + 
-        ethers.utils.formatEther(ownerBalance));
+                     ethers.utils.formatEther(ownerBalance));
     });
 
+    it("owner should re possess loan correctly ", async function () {
+      console.log("----------------------");
+      console.log("loan.address is " + loan.address);
+      // let loanAmount = await loan.getLoanAmount();
+      // console.log("loan amount is  " + loanAmount);
+      await loan.repossess();
+      //expect(loanAmount).to.equal(LOAN_AMOUNT);
+
+    });
+
+
   });
+
 
 });

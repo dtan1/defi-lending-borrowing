@@ -89,4 +89,12 @@ contract Loan  {
         selfdestruct(payable(parties.lender));
 
     }
+
+    function repossess() public payable {
+        console.log("l..block.timestamp is ", block.timestamp);
+        console.log("l..dueDate is ", dueDate);
+        require(block.timestamp > dueDate, "loan is not due yet ");
+        collateral.token.transfer(parties.lender, collateral.amount);
+        selfdestruct(payable(parties.lender));
+    }
 }
