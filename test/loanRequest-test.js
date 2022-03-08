@@ -15,7 +15,7 @@ describe("LoanRequest", function () {
   let dappToken;
 
   // comment out to turn console.log back on
-  console.log = function(){}; // turn off console.log
+  //console.log = function(){}; // turn off console.log
 
 
   // describe("Dapp token initialization", async () => {
@@ -55,6 +55,13 @@ describe("LoanRequest", function () {
     await loanRequest.deployed();
     console.log("loadRequest addr is " + loanRequest.address);
     provider = ethers.provider;
+    
+  });
+
+  after ( async function () {
+    console.log(' ');
+    console.log('------------ end of loan request test  --------------');
+    console.log(' ');
     
   });
 
