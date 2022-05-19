@@ -1,16 +1,16 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-//const LoanToken = artifacts.require("LoanToken");
 
 
 describe("LoanToken", function () {
   const LOAN_AMOUNT = 10;
   const LOAN_DURATION = 86400; // add 1 day - 86400 secs
-  const COLLATERAL_AMOUNT = 15;
+  //const COLLATERAL_AMOUNT = 15;
+  const COLLATERAL_AMOUNT = ethers.utils.parseEther('15'); // amount of ETH in Wei
   const FEE_AMOUNT = 2;
 
   const ERC20_TOKEN_SUPPLY = 100;
-  const BORROWER_STARTING_TOKEN = 5;
+  const BORROWER_STARTING_TOKEN = 10;
   const LENDER_STARTING_TOKEN = ERC20_TOKEN_SUPPLY - BORROWER_STARTING_TOKEN; //95
 
 
@@ -18,7 +18,8 @@ describe("LoanToken", function () {
 
       loanTokenAmount : LOAN_AMOUNT,
       feeTokenAmount : FEE_AMOUNT,
-      ethCollateralAmount : ethers.utils.parseEther(COLLATERAL_AMOUNT.toString()),
+      //ethCollateralAmount : ethers.utils.parseEther(COLLATERAL_AMOUNT.toString()),
+      ethCollateralAmount : COLLATERAL_AMOUNT,
       loanDuration : LOAN_DURATION  // today's date + loan duratoin ***
     });
 
@@ -28,25 +29,19 @@ describe("LoanToken", function () {
   let dappToken;
   let lenderStartingEth;
 
-
+  // comment out to turn console.log back on
+  // console.log = function(){}; // turn off console.log
 
   before(async function () {
     [lender, borrower] = await ethers.getSigners();
-    console.log("lender addr is " + lender.address);
-    console.log("borrower addr is " + borrower.address);
 
     DappToken = await ethers.getContractFactory("DappToken");
     dappToken = await DappToken.deploy(lender.address, ERC20_TOKEN_SUPPLY);
     await dappToken.deployed();
-    console.log("dappToken addr is " + dappToken.address);
-
 
     LoanToken = await ethers.getContractFactory("LoanToken");
-
-
     loanToken = await LoanToken.deploy(LOAN_TERMS, dappToken.address);
     await loanToken.deployed();
-    console.log("loanToken addr is " + loanToken.address);
     provider = ethers.provider;
 
     // set up borrower with BORROWER_STARTING_TOKEN  (transferred from lender)
@@ -56,8 +51,9 @@ describe("LoanToken", function () {
     let lenderBalance = await provider.getBalance(lender.address);
     let lenderEthBalance = ethers.utils.formatEther(lenderBalance);
     console.log("lender strating ether balance is " + lenderEthBalance);
-    lenderStartingEth = Math.round( parseInt(lenderEthBalance));
-    console.log("lenderStartingEth is " + lenderStartingEth);
+    // lenderStartingEth = Math.round( parseInt(lenderEthBalance));
+    lenderStartingEth = Math.round( lenderEthBalance);
+    console.log("rounded lenderStartingEth is " + lenderStartingEth);
     
   });
 
@@ -76,7 +72,7 @@ describe("LoanToken", function () {
       await loanToken.fundLoan( { value : LOAN_TERMS.loanTokenAmount});
       await loanToken.connect(borrower).takeUpLoan( { value : LOAN_TERMS.ethCollateralAmount});
   
-
+        console.log("==== loanTokenTest2 ==== after takeUpLoan.....")
         console.log("borrower token balance  is " + await dappToken.balanceOf(borrower.address));
         console.log("lender token  balance  is " + await dappToken.balanceOf(lender.address));
         console.log("loan token  balance  is " + await dappToken.balanceOf(loanToken.address));
@@ -93,7 +89,7 @@ describe("LoanToken", function () {
   
         await loanToken.liquidate();
   
-        console.log("==== loanTOkenTest ==== liquidate =====");
+        console.log("==== loanTOkenTest2 ==== liquidate =====");
         borrowerTokenBalance = await dappToken.balanceOf(borrower.address);
         console.log("borrower token  balance  is " + borrowerTokenBalance);
         lenderTokenBalance = await dappToken.balanceOf(lender.address);
@@ -102,10 +98,9 @@ describe("LoanToken", function () {
         console.log("loan token  balance  is " + loanTokenBalance);
 
         lenderBalance = await provider.getBalance(lender.address);
-        let lenderEthBalance = ethers.utils.formatEther(lenderBalance);
-        console.log("lender ether balance is " + lenderEthBalance);
-        lenderRoundEthBalance = Math.round( parseInt(lenderEthBalance));
-        console.log("lenderRoundEthBalance is " + lenderRoundEthBalance);
+        roundLenderBalance = Math.round(ethers.utils.formatEther(lenderBalance));
+        console.log("lender ether balance has increased : " + roundLenderBalance);
+
 
         loanTokenBalance = await provider.getBalance(loanToken.address);
         console.log("loanToken ether balance is " + 
@@ -116,7 +111,9 @@ describe("LoanToken", function () {
 
         ethCollateralAmount = parseInt( ethers.utils.formatEther(LOAN_TERMS.ethCollateralAmount));
         console.log("ethCollaterAmount is " + ethCollateralAmount);
-        expect(lenderRoundEthBalance).to.equal(lenderStartingEth + ethCollateralAmount);
+        console.log("lenderStartingEth + ethCollateralAmount " , lenderStartingEth + ethCollateralAmount);
+        //expect(lenderRoundEthBalance).to.equal(lenderStartingEth + ethCollateralAmount);
+        expect(roundLenderBalance).to.equal(lenderStartingEth + ethCollateralAmount);
   
       });
 

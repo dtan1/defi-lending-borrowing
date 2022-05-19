@@ -1,12 +1,11 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-//const LoanToken = artifacts.require("LoanToken");
 
 
 describe("LoanToken", function () {
   const LOAN_AMOUNT = 10;
   const LOAN_DURATION = 86400; // add 1 day - 86400 secs
-  const COLLATERAL_AMOUNT = 15;
+  const COLLATERAL_AMOUNT = ethers.utils.parseEther('15'); // amount of ETH in Wei
   const FEE_AMOUNT = 2;
 
   const ERC20_TOKEN_SUPPLY = 100;
@@ -52,18 +51,7 @@ describe("LoanToken", function () {
     await dappToken.deployed();
     console.log("dappToken addr is " + dappToken.address);
 
-
     LoanToken = await ethers.getContractFactory("LoanToken");
-
-    // const LOAN_TERMS = ({
-    //   amount : LOAN_AMOUNT,
-    //   duration : LOAN_DURATION,
-    //   loanTokenAmount : LOAN_AMOUNT,
-    //   feeTokenAmount : FEE_AMOUNT,
-    //   ethCollateralAmount : COLLATERAL_AMOUNT,
-    //   repayByTimestamp : LOAN_DURATION  // today's date + loan duratoin ***
-    // });
-
     loanToken = await LoanToken.deploy(LOAN_TERMS, dappToken.address);
     await loanToken.deployed();
     console.log("loanToken addr is " + loanToken.address);
@@ -74,6 +62,9 @@ describe("LoanToken", function () {
     console.log("borrower starting token balance  is " + await dappToken.balanceOf(borrower.address));
     console.log("lender starting token  balance  is " + await dappToken.balanceOf(lender.address));
     
+    borrowerBalance = await provider.getBalance(borrower.address);
+    InitialRoundBorrowerBalance = Math.round(ethers.utils.formatEther(borrowerBalance));
+    console.log("initial borrower ether balance is " + InitialRoundBorrowerBalance);
     
   });
 
@@ -85,14 +76,10 @@ describe("LoanToken", function () {
   });
 
   describe("LoanToken testing", function () {
-    // before( async() => {
-    //   // create new instance
-    //   dappToken = await DappToken.new(lender.address, ERC20_TOKEN_SUPPLY);
-
-    // })
+ 
     it("should initialize loan terms struct correctly ", async function () {
       let  loanTerms = await loanToken.getLoanTerms();
-      console.log("collateral amount is " + loanTerms.ethCollateralAmount);
+      console.log("collateral amount is " + ethers.utils.formatEther(loanTerms.ethCollateralAmount));
       expect (loanTerms.ethCollateralAmount).to.equal(LOAN_TERMS.ethCollateralAmount);
 
 
@@ -100,7 +87,7 @@ describe("LoanToken", function () {
 
 
 
-    it("should approvea spender from test js correctly ", async function () {
+    it("should (approvea spender) by increasing allowance from test js correctly ", async function () {
        
       console.log("===== loanTokenTest ==== dappToken.increaseAllowance ======");
        //await dappToken.increaseAllowance(loanToken.address, LOAN_AMOUNT);
@@ -144,6 +131,10 @@ describe("LoanToken", function () {
         loanTokenBalance = await dappToken.balanceOf(loanToken.address);
         console.log("loan token  balance  is " + loanTokenBalance);
 
+        borrowerBalance = await provider.getBalance(borrower.address);
+        InitialRoundBorrowerBalance = Math.round(ethers.utils.formatEther(borrowerBalance));
+        console.log("borrower ether balance is now " + InitialRoundBorrowerBalance);
+
         //expect(borrowerTokenBalance).to.equal(LOAN_AMOUNT + BORROWER_STARTING_TOKEN);
         expect(borrowerTokenBalance).to.equal(LOAN_TERMS.loanTokenAmount + BORROWER_STARTING_TOKEN);
   
@@ -178,6 +169,10 @@ describe("LoanToken", function () {
         console.log("lender token  balance  is " + lenderTokenBalance);
         loanTokenBalance = await dappToken.balanceOf(loanToken.address);
         console.log("loan token  balance  is " + loanTokenBalance);
+
+        borrowerBalance = await provider.getBalance(borrower.address);
+        InitialRoundBorrowerBalance = Math.round(ethers.utils.formatEther(borrowerBalance));
+        console.log("borrower ether balance is back to initial amount " + InitialRoundBorrowerBalance);
 
         //expect(lenderTokenBalance).to.equal(LENDER_STARTING_TOKEN + FEE_AMOUNT);
         expect(lenderTokenBalance).to.equal(LENDER_STARTING_TOKEN + 

@@ -5,17 +5,24 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 import "./DappToken.sol";
-import "./Loan.sol";
 
 /// @title LoanToken
-/// @notice Simple loan to borrow ERC20 token using ETH as collateral
-/// properties : fix rate, fix term, single lender and borrower.
-/// fundLoan
-/// takeLoan and accept loan
-/// repay
-/// liquidate
+/// @notice Simple loan contract to lend ERC20 token requiring ETH as collateral
+/** @dev created by lender          
+    properties : fix rate, fix term, single lender and borrower.
+    lender : fundLoan
+    borrower : takeLoan and accept loan
+    borrower : repay
+    lender : liquidate
+*/
+
 contract LoanToken  {
 
+    /// @notice Container for loan terms
+    /// @member loanTokenAmount - loan token amount
+    /// @member feeTokenAmount - loan fee amount in token
+    /// @member ethCollaterlaAmount - collateral amount in ETH
+    /// @member loanDuration - loan duration
     struct LoanTerms {
         uint loanTokenAmount;
         uint feeTokenAmount;
@@ -30,7 +37,10 @@ contract LoanToken  {
     DappToken public dappToken;
     uint dueDate; 
 
-
+    /// @notice Constructor (called by the lender)
+    /// @param _loanTerms - loan terms
+    /// @param _dappToken - dapp (ERC20) token to lend out 
+    ///
     constructor(
         LoanTerms memory _loanTerms,
         DappToken _dappToken
@@ -39,52 +49,48 @@ contract LoanToken  {
         loanTerms = _loanTerms;
         dappToken = _dappToken;
         dueDate = block.timestamp + loanTerms.loanDuration;
-        //console.log("*** contract **** constructor **** ");
-        //console.log("address(dappToken) is ", address(dappToken));
     }
 
 
-    // lender transfer ERC token to the contract
-    // which can later be transferred to borrower as a loan
-    function fundLoan() public payable {
-        // require ...
-        dappToken.transferFrom(msg.sender, address(this), loanTerms.loanTokenAmount);
+    /// @notice Lender needs to fund the loan with ERC20 token first
+    function fundLoan() external payable {
+        require( dappToken.transferFrom(msg.sender, address(this), loanTerms.loanTokenAmount) , "fundLoan: transfer failed");
 
     }
 
-    // get loan terms
-    function getLoanTerms() public view returns (LoanTerms memory ) {
+    /// @notice get loan terms
+    /// @return loanTerms
+    function getLoanTerms() external view returns (LoanTerms memory ) {
         return (loanTerms);
     }
 
-    // called by borrower
-    // borrower supply eth as collateral
-    // ERC token to be loaned is transferred to borrower
-    function takeUpLoan() public payable {
+    /// @notice  called by borrower to take up loan with collateral in ETH
+    /// @dev ERC20 token to be loaned is transferred to borrower
+    function takeUpLoan() external payable {
         require( msg.value == loanTerms.ethCollateralAmount);
         borrower = msg.sender;
-        dappToken.transfer(borrower, loanTerms.loanTokenAmount);
+        require(dappToken.transfer(borrower, loanTerms.loanTokenAmount), "failed to transfer loan token to borrower");
     }
 
   
-    // callbed by borrower to repay ERC token, and get back eth
-    function repay() public {
+    /// @notice  callbed by borrower to repay ERC token, and get back eth
+    function repay() external {
         require(msg.sender == borrower);
-        console.log("loanTerms.loanTokenAmount + loanTerms.feeTokenAmount is " ,
-                        loanTerms.loanTokenAmount + loanTerms.feeTokenAmount);
-        dappToken.transferFrom(borrower, lender,
-                 loanTerms.loanTokenAmount + loanTerms.feeTokenAmount);
+        // console.log("loanTerms.loanTokenAmount + loanTerms.feeTokenAmount is " ,
+        //                 loanTerms.loanTokenAmount + loanTerms.feeTokenAmount);
+        require( dappToken.transferFrom(borrower, lender,
+                 loanTerms.loanTokenAmount + loanTerms.feeTokenAmount) , "repay: transfer failed");
 
         // after repaid
         selfdestruct(payable(borrower)); // release eth back to borrower.
     }
 
-    // called by lender only when loan is not paid after due date
-    // reclaim eth in collateral 
-    function liquidate() public {
+    /// @notice  called by lender only when loan is not paid after due date
+    /// @dev reclaim eth in collateral 
+    function liquidate() external {
         require(msg.sender == lender, "only lender can liquidate the loan");
-        console.log("l..block.timestamp is ", block.timestamp);
-        console.log("l..dueDate is ", dueDate);
+        // console.log("l..block.timestamp is ", block.timestamp);
+        // console.log("l..dueDate is ", dueDate);
         require(block.timestamp > dueDate,
                         "cannot liquidate before the loan is due" );
         selfdestruct(payable(lender));
