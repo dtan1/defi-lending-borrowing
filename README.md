@@ -70,6 +70,11 @@ Below is a brief summary of the technical libraries or tools that is used in thi
 
 ### Technical consideration ###
 
+- LoanRequest.sol : borrowing ETH using ERC20 token as collateral
+  - Loan.sol : creating a loan contract (by lender who takes up the loan in LoanRequest.sol)
+- LoanToken.sol : a general loan where lender can lend out ERC20 token using ETH as collateral
+
+
 #### States ####
 - borrowing ETH using ERC20 token as collateral: (loanRequest)
   - struct is used to specify 
@@ -79,24 +84,54 @@ Below is a brief summary of the technical libraries or tools that is used in thi
     - loan state (either Waiting or accepted)
 
 - creating a loan contract :
-  - 
+  - struct is used to specify 
+    - loan parties
+    - loan collateral 
+    - loan term
  
-- a general loan when lender can lend out ERC20 token using ETH as collateral :
-  - 
-  
+- a general loan where lender can lend out ERC20 token using ETH as collateral :
+  - struct is used to specify 
+    - loan term
+
 
 #### Functions ####
-- 
+- LoanRequest.sol :
+  - acceptLoanRequest :
+    - lender needs to provide matching loan amount
+    - ERC20 token will be trasnferred from borrower into the Loan.sol contract
+    - loan amount in ETH will be transferred from lender to borrower.
 
+- Loan.sol :
+  - payLoan :
+    - borrower must pay back matching ETH amount in loan
+    - transfer ERC20 token in collateral back to borrower   
+    - transfer ETH back to lender
+
+- LoanToken.sol :
+  - repay (loan) :
+    - borrower must pay back matching ERC20 amount + fee in loan
+    - release ETH in collateral back to borrower.
 
 <br>
 
 ## Testing ##
 
 ### Unit Test ###
-- 
+- LoanRequest sol (borrowing ETH using ERC20 token as collateral) :
+  - user/lender should should be able to take up loan correctly.
+  - user/lender should not be able to take up loan that has already been taken.
 
--  :
+- Loan.sol (creating a loan contract by lender who takes up the loan in LoanRequest.sol) :
+  - borrower should be able to pay back loan correctly
+  - when borrower fails to pay back loan by due date, lender should be able to re possess the loan correctly.
+  
+- LoanToken.sol (a general loan where lender can lend out ERC20 token using ETH as collateral) :
+  - lender should be able to fund the loan correctly
+  - borrower should be able to take up the loan correctly
+  - borrower should be able to pay back the loan correctly before due date
+  - lender should be able to liquidate the loan correctly if borrower fails to pay back the loan by due date.
+
+
   
 
 
